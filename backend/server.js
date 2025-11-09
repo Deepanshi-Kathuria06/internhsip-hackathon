@@ -10,20 +10,35 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
+
+// ✅ Allow both local + deployed frontend
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local dev
+      "https://internhsip-hackathon-git-main-deepanshi-kathuria06s-projects.vercel.app", // vercel live URL
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use("/api/posts", postRoutes);
 
 const server = createServer(app);
 
-// ✅ Proper Socket.io setup with CORS
+// ✅ Proper Socket.io setup with matching CORS
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"], // frontend port
+    origin: [
+      "http://localhost:5173",
+      "https://internhsip-hackathon-git-main-deepanshi-kathuria06s-projects.vercel.app",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
-  transports: ["websocket", "polling"], // allow both for fallback
+  transports: ["websocket", "polling"],
 });
 
 io.on("connection", (socket) => {
@@ -39,7 +54,7 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ Important: 0.0.0.0 allows connections from all sources
+// ✅ Use 0.0.0.0 for Render hosting
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
