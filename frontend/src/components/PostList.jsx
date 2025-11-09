@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-// ✅ Connect socket.io to backend
-const socket = io("http://localhost:5000", {
+// ✅ Connect socket.io to your live backend
+const socket = io("https://learnato-forum-backend-s14g.onrender.com", {
   transports: ["websocket"],
   withCredentials: false,
 });
@@ -19,7 +19,9 @@ export default function PostList({ user }) {
   // ✅ Fetch posts
   const fetchPosts = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/posts");
+      const { data } = await axios.get(
+        "https://learnato-forum-backend-s14g.onrender.com/api/posts"
+      );
       setPosts(data);
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -38,11 +40,14 @@ export default function PostList({ user }) {
     if (!title || !content) return alert("Please enter both title and content!");
     setLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/posts", {
-  title,
-  content,
-  user: user.name, // ✅ send only name (string)
-});
+      await axios.post(
+        "https://learnato-forum-backend-s14g.onrender.com/api/posts",
+        {
+          title,
+          content,
+          user: user.name, // ✅ send only name (string)
+        }
+      );
 
       socket.emit("newPost");
       setTitle("");
@@ -59,10 +64,13 @@ export default function PostList({ user }) {
   const addReply = async (id) => {
     if (!replyText[id]) return;
     try {
-      await axios.post(`http://localhost:5000/api/posts/${id}/reply`, {
-        author: user.name,      // ✅ structured author field
-        content: replyText[id], // ✅ message text
-      });
+      await axios.post(
+        `https://learnato-forum-backend-s14g.onrender.com/api/posts/${id}/reply`,
+        {
+          author: user.name, // ✅ structured author field
+          content: replyText[id], // ✅ message text
+        }
+      );
       socket.emit("newReply");
       setReplyText({ ...replyText, [id]: "" });
       fetchPosts();
@@ -74,7 +82,9 @@ export default function PostList({ user }) {
   // ✅ Upvote post
   const upvote = async (id) => {
     try {
-      await axios.post(`http://localhost:5000/api/posts/${id}/upvote`);
+      await axios.post(
+        `https://learnato-forum-backend-s14g.onrender.com/api/posts/${id}/upvote`
+      );
       socket.emit("updatePosts");
       fetchPosts();
     } catch (error) {
@@ -85,7 +95,9 @@ export default function PostList({ user }) {
   // ✅ Mark post as answered
   const markAnswered = async (id) => {
     try {
-      await axios.post(`http://localhost:5000/api/posts/${id}/mark`);
+      await axios.post(
+        `https://learnato-forum-backend-s14g.onrender.com/api/posts/${id}/mark`
+      );
       socket.emit("updatePosts");
       fetchPosts();
     } catch (error) {
@@ -139,7 +151,9 @@ export default function PostList({ user }) {
 
       {/* Post Form */}
       <div className="w-full max-w-2xl bg-gray-800 shadow-xl rounded-2xl p-6 mb-10 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 text-gray-200">Create a Post</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-200">
+          Create a Post
+        </h2>
         <p className="text-sm text-gray-400 mb-3">
           Posting as <span className="text-blue-400">{user?.name}</span>
         </p>
@@ -183,7 +197,9 @@ export default function PostList({ user }) {
               <div className="flex justify-between items-center mb-3">
                 <h3
                   className={`text-2xl font-semibold ${
-                    post.isAnswered ? "text-green-400 line-through" : "text-blue-400"
+                    post.isAnswered
+                      ? "text-green-400 line-through"
+                      : "text-blue-400"
                   }`}
                 >
                   {post.title}
@@ -203,14 +219,13 @@ export default function PostList({ user }) {
               <p className="text-gray-300 mb-2">{post.content}</p>
 
               <p className="text-sm text-gray-400 mb-3">
-  Votes: {post.votes} | Replies: {post.replies?.length || 0} |{" "}
-  Posted by:{" "}
-  <span className="text-blue-400 font-medium">{post.user}</span> •{" "}
-  <span className="text-gray-500">
-    {new Date(post.createdAt).toLocaleString()}
-  </span>
-</p>
-
+                Votes: {post.votes} | Replies: {post.replies?.length || 0} |{" "}
+                Posted by:{" "}
+                <span className="text-blue-400 font-medium">{post.user}</span> •{" "}
+                <span className="text-gray-500">
+                  {new Date(post.createdAt).toLocaleString()}
+                </span>
+              </p>
 
               {/* Replies */}
               <div className="mt-3">
@@ -221,7 +236,10 @@ export default function PostList({ user }) {
                       key={i}
                       className="ml-3 mb-2 text-gray-300 border-l-2 border-gray-700 pl-3"
                     >
-                      ➤ <span className="text-blue-400 font-medium">{r.author}:</span>{" "}
+                      ➤{" "}
+                      <span className="text-blue-400 font-medium">
+                        {r.author}:
+                      </span>{" "}
                       {r.content}
                     </div>
                   ))
@@ -237,7 +255,10 @@ export default function PostList({ user }) {
                     className="border border-gray-600 bg-gray-900 text-white p-2 rounded flex-1 focus:ring-2 focus:ring-blue-500 outline-none"
                     value={replyText[post._id] || ""}
                     onChange={(e) =>
-                      setReplyText({ ...replyText, [post._id]: e.target.value })
+                      setReplyText({
+                        ...replyText,
+                        [post._id]: e.target.value,
+                      })
                     }
                   />
                   <button
@@ -266,7 +287,8 @@ export default function PostList({ user }) {
 
       {/* Footer */}
       <footer className="mt-12 text-gray-500 text-sm">
-        Built with ❤️ by <span className="text-blue-400 font-semibold">Deepanshi</span>
+        Built with ❤️ by{" "}
+        <span className="text-blue-400 font-semibold">Deepanshi</span>
       </footer>
     </div>
   );
