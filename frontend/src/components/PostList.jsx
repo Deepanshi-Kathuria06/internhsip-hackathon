@@ -127,15 +127,7 @@ export default function PostList({ user }) {
             {user?.name || "Anonymous"}
           </span>
         </p>
-        <button
-          onClick={() => {
-            localStorage.removeItem("user");
-            window.location.reload();
-          }}
-          className="text-red-400 hover:text-red-500 text-sm"
-        >
-          Logout
-        </button>
+        
       </div>
 
       {/* Search */}
