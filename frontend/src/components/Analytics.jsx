@@ -3,11 +3,14 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
 
-// ✅ Connect to backend socket
-const socket = io("http://localhost:5000", {
+// ✅ Connect to backend socket - Use the same URL as in PostList
+const socket = io("https://learnato-forum-backend-s14g.onrender.com", {
   transports: ["websocket"],
   withCredentials: false,
 });
+
+// Base URL for API calls
+const API_BASE_URL = "https://learnato-forum-backend-s14g.onrender.com/api";
 
 export default function Analytics({ user }) {
   const [stats, setStats] = useState({
@@ -20,26 +23,29 @@ export default function Analytics({ user }) {
   });
   const [loading, setLoading] = useState(true);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [error, setError] = useState(null);
 
   // ✅ Fetch analytics from backend
   const fetchAnalytics = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/posts");
+      setError(null);
+      const { data } = await axios.get(`${API_BASE_URL}/posts`);
 
       const totalPosts = data.length;
       const totalReplies = data.reduce(
         (sum, post) => sum + (post.replies?.length || 0),
         0
       );
-      const totalUpvotes = data.reduce((sum, post) => sum + post.votes, 0);
+      const totalUpvotes = data.reduce((sum, post) => sum + (post.votes || 0), 0);
       const answeredPosts = data.filter(post => post.isAnswered).length;
       
       // Calculate unique users
-      const users = new Set(data.map(post => post.user));
+      const users = new Set(data.map(post => post.user).filter(Boolean));
       const activeUsers = users.size;
       
       // Calculate engagement rate
-      const engagementRate = totalPosts > 0 ? ((totalReplies + totalUpvotes) / totalPosts).toFixed(1) : 0;
+      const engagementRate = totalPosts > 0 ? 
+        Number(((totalReplies + totalUpvotes) / totalPosts).toFixed(1)) : 0;
 
       // Get recent activity
       const activity = data
@@ -49,10 +55,10 @@ export default function Analytics({ user }) {
           id: post._id,
           title: post.title,
           type: 'post',
-          user: post.user,
+          user: post.user || 'Anonymous',
           timestamp: post.createdAt,
           replies: post.replies?.length || 0,
-          votes: post.votes
+          votes: post.votes || 0
         }));
 
       setStats({ 
@@ -66,6 +72,17 @@ export default function Analytics({ user }) {
       setRecentActivity(activity);
     } catch (error) {
       console.error("Error fetching analytics:", error);
+      setError("Failed to load analytics data. Please check your connection.");
+      // Set default values to prevent UI breaking
+      setStats({
+        totalPosts: 0,
+        totalReplies: 0,
+        totalUpvotes: 0,
+        answeredPosts: 0,
+        activeUsers: 0,
+        engagementRate: 0,
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
@@ -168,6 +185,24 @@ export default function Analytics({ user }) {
             <span className="text-sm">Live Updates Active</span>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
+            </div>
+            <button
+              onClick={fetchAnalytics}
+              className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-all duration-300"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* User Welcome */}
         <div className="flex items-center justify-between mb-8 p-4 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700">
@@ -315,7 +350,7 @@ export default function Analytics({ user }) {
           <div className="space-y-4">
             {recentActivity.length > 0 ? (
               recentActivity.map((activity, index) => (
-                <div key={activity.id} className="flex items-center gap-4 p-4 bg-gray-900/50 rounded-xl border border-gray-700 hover:border-gray-600 transition-all duration-300">
+                <div key={activity.id || index} className="flex items-center gap-4 p-4 bg-gray-900/50 rounded-xl border border-gray-700 hover:border-gray-600 transition-all duration-300">
                   <div className="flex-shrink-0 w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                     <span className="text-blue-400 font-bold text-sm">{index + 1}</span>
                   </div>
